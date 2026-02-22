@@ -50,10 +50,10 @@ export function NotificationDropdown({
   return (
     <div
       ref={ref}
-      className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border bg-background shadow-lg"
+      className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border bg-card"
     >
       <div className="flex items-center justify-between border-b px-4 py-2.5">
-        <h3 className="text-sm font-semibold">Notifications</h3>
+        <h3 className="mono text-xs uppercase tracking-wider">Notifications</h3>
         {alerts.some((a) => !a.is_read) && (
           <button
             onClick={onMarkAllRead}

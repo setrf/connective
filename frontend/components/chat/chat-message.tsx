@@ -42,10 +42,10 @@ function ConfidenceBadge({ confidence }: { confidence: number }) {
     confidence >= 0.7 ? "High" : confidence >= 0.4 ? "Medium" : "Low";
   const color =
     confidence >= 0.7
-      ? "text-green-600"
+      ? "text-green-400"
       : confidence >= 0.4
-        ? "text-yellow-600"
-        : "text-red-500";
+        ? "text-yellow-400"
+        : "text-red-400";
   return (
     <span className={cn("text-xs font-medium", color)}>
       {label} confidence
@@ -62,13 +62,13 @@ function SystemMessage({ message }: { message: ChatMessageType }) {
         className={cn(
           "max-w-[90%] rounded-lg border px-4 py-3 text-sm",
           isOverlapAlert
-            ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30"
+            ? "border-amber-700 bg-amber-950/30"
             : "border-border bg-muted"
         )}
       >
         {isOverlapAlert && (
           <div className="mb-1.5 flex items-center gap-2">
-            <span className="inline-flex items-center rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-800 dark:text-amber-200">
+            <span className="inline-flex items-center rounded-full bg-amber-800 px-2 py-0.5 text-xs font-semibold text-amber-200">
               Overlap detected
             </span>
             {message.created_at && (

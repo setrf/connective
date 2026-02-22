@@ -34,7 +34,7 @@ export function EvidencePanel({
         <button
           onClick={() => setTab("citations")}
           className={cn(
-            "flex-1 px-4 py-2 text-sm font-medium transition-colors",
+            "mono flex-1 px-4 py-2 text-xs uppercase tracking-wider transition-colors",
             tab === "citations"
               ? "border-b-2 border-primary text-primary"
               : "text-muted-foreground hover:text-foreground"
@@ -45,7 +45,7 @@ export function EvidencePanel({
         <button
           onClick={() => setTab("timeline")}
           className={cn(
-            "flex-1 px-4 py-2 text-sm font-medium transition-colors",
+            "mono flex-1 px-4 py-2 text-xs uppercase tracking-wider transition-colors",
             tab === "timeline"
               ? "border-b-2 border-primary text-primary"
               : "text-muted-foreground hover:text-foreground"

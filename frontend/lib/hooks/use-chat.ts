@@ -160,5 +160,15 @@ export function useChat() {
     []
   );
 
-  return { messages, isStreaming, isLoadingHistory, activeCitations, sendMessage, setActiveCitations };
+  const clearChat = useCallback(async () => {
+    try {
+      await apiClient.clearChat();
+      setMessages([]);
+      setActiveCitations([]);
+    } catch {
+      // Silently fail
+    }
+  }, []);
+
+  return { messages, isStreaming, isLoadingHistory, activeCitations, sendMessage, setActiveCitations, clearChat };
 }

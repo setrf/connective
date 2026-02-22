@@ -29,7 +29,7 @@ export function EvidenceTimeline({ citations }: EvidenceTimelineProps) {
       {sorted.map((citation, i) => (
         <div key={i} className="flex gap-3">
           <div className="flex flex-col items-center">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full border bg-background">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full border bg-card">
               <SourceIcon provider={citation.provider} />
             </div>
             {i < sorted.length - 1 && (

@@ -7,8 +7,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Connectors</h1>
-        <p className="text-muted-foreground">
+        <h1 className="mono text-sm uppercase tracking-wider">[ Connectors ]</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Connect your work tools to discover overlaps and get answers.
         </p>
       </div>

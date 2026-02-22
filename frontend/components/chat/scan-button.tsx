@@ -56,9 +56,9 @@ export function ScanButton({ onResults }: ScanButtonProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="mx-4 w-full max-w-lg rounded-lg border bg-background p-6 shadow-lg">
+      <div className="mx-4 w-full max-w-lg rounded-lg border bg-card p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Scan for overlaps</h2>
+          <h2 className="mono text-sm uppercase tracking-wider">[ Scan for overlaps ]</h2>
           <button
             onClick={() => {
               setOpen(false);

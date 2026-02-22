@@ -4,24 +4,24 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 224 71% 4%;
-    --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
-    --primary: 220 90% 56%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 46%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 220 14% 96%;
-    --accent-foreground: 224 71% 4%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 220 90% 56%;
-    --radius: 0.5rem;
+    --background: 0 0% 2%;
+    --foreground: 0 0% 92%;
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 92%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 2%;
+    --secondary: 0 0% 9%;
+    --secondary-foreground: 0 0% 60%;
+    --muted: 0 0% 7%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 0 0% 10%;
+    --accent-foreground: 0 0% 92%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 10%;
+    --input: 0 0% 7%;
+    --ring: 0 0% 100%;
+    --radius: 0rem;
   }
 }
 
@@ -30,6 +30,127 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground selection:bg-white selection:text-black;
   }
+}
+
+/* --- Shared utility --- */
+
+.mono {
+  font-family: var(--font-space-mono), monospace;
+}
+
+/* --- Landing page --- */
+
+.landing-page {
+  cursor: crosshair;
+}
+
+.landing-page ::-webkit-scrollbar {
+  width: 4px;
+}
+.landing-page ::-webkit-scrollbar-track {
+  background: #000;
+}
+.landing-page ::-webkit-scrollbar-thumb {
+  background: #333;
+}
+
+/* Fade-in animation */
+.fade-in-up {
+  animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hero title */
+.hero-title {
+  font-size: clamp(3rem, 8vw, 6rem);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+
+/* Bracket corners */
+.bracket-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: white;
+  border-style: solid;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.5;
+}
+
+.active-card .bracket-corner {
+  opacity: 1;
+  width: 24px;
+  height: 24px;
+}
+
+.bl-tl { top: 0; left: 0; border-width: 1px 0 0 1px; }
+.bl-tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
+.bl-br { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+.bl-bl { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+
+/* Section dimming on scroll */
+.section-container {
+  transition: opacity 0.5s ease;
+}
+.section-container:hover {
+  opacity: 1;
+}
+.dimmed {
+  opacity: 0.3;
+}
+
+/* Primary CTA button */
+.btn-primary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 12px 24px;
+  font-family: var(--font-space-mono), monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  position: relative;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: white;
+  color: black;
+  border-color: white;
+}
+
+.btn-primary::before,
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: white;
+  transition: all 0.3s ease;
+  opacity: 0;
+}
+
+.btn-primary:hover::before {
+  opacity: 1;
+  top: -2px;
+  left: -2px;
+}
+
+.btn-primary:hover::after {
+  opacity: 1;
+  bottom: -2px;
+  right: -2px;
 }

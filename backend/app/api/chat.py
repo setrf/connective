@@ -142,6 +142,20 @@ async def chat(
     return EventSourceResponse(generate())
 
 
+@router.delete("")
+async def clear_chat(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete all chat messages for the current user."""
+    stmt = select(ChatMessage).where(ChatMessage.user_id == user.id)
+    result = await db.execute(stmt)
+    for msg in result.scalars().all():
+        await db.delete(msg)
+    await db.commit()
+    return {"status": "ok"}
+
+
 @router.get("/history", response_model=ChatHistoryResponse)
 async def chat_history(
     before: datetime.datetime | None = Query(None),

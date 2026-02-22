@@ -162,6 +162,15 @@ class ApiClient {
     return res.json();
   }
 
+  async clearChat() {
+    const res = await fetch(`${API_URL}/api/chat`, {
+      method: "DELETE",
+      headers: this.headers(),
+    });
+    if (!res.ok) throw new Error("Failed to clear chat");
+    return res.json();
+  }
+
   async getChatHistory(before?: string, limit: number = 50) {
     const params = new URLSearchParams();
     if (before) params.set("before", before);

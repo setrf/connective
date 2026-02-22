@@ -23,7 +23,7 @@ export function ChatMessageList({
     return (
       <div className="flex flex-1 items-center justify-center p-8 text-center">
         <div className="space-y-2">
-          <p className="text-lg font-medium">Ask a question</p>
+          <p className="mono text-sm uppercase tracking-wider">[ Query ]</p>
           <p className="text-sm text-muted-foreground">
             Try &quot;Has someone worked on authentication?&quot; or &quot;Who
             is working on the API redesign?&quot;
