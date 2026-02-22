@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { UserMenu } from "@/components/auth/user-menu";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export default function DashboardLayout({
   children,
@@ -29,7 +30,10 @@ export default function DashboardLayout({
               </Link>
             </nav>
           </div>
-          <UserMenu />
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <UserMenu />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-5xl p-4">{children}</main>

@@ -83,6 +83,65 @@ async def _llm_rerank(
         return candidates[:top_k]
 
 
+async def cross_user_similarity_search(
+    db: AsyncSession,
+    source_user_id: uuid.UUID,
+    source_document_id: uuid.UUID,
+    chunk_embeddings: list[list[float]],
+    similarity_threshold: float = 0.25,
+    top_k_per_chunk: int = 5,
+) -> list[dict]:
+    """Search for similar chunks across all documents.
+
+    For each embedding, find the closest chunks that belong to any document
+    except the source document itself, deduplicating by target document.
+    """
+    seen_documents: dict[uuid.UUID, dict] = {}  # doc_id -> best match
+
+    for embedding in chunk_embeddings:
+        distance = (
+            cast(Chunk.embedding, HALFVEC(1536))
+            .op("<=>")(cast(embedding, HALFVEC(1536)))
+            .cast(Float)
+            .label("distance")
+        )
+
+        stmt = (
+            select(
+                Chunk.id,
+                Chunk.document_id,
+                Chunk.user_id,
+                Chunk.content,
+                Chunk.metadata_,
+                distance,
+            )
+            .where(Chunk.document_id != source_document_id)
+            .where(distance < similarity_threshold)
+            .order_by(distance)
+            .limit(top_k_per_chunk)
+        )
+
+        await db.execute(text("SET LOCAL hnsw.ef_search = 100"))
+        results = (await db.execute(stmt)).all()
+
+        for row in results:
+            doc_id = row.document_id
+            if doc_id not in seen_documents or row.distance < seen_documents[doc_id]["distance"]:
+                seen_documents[doc_id] = {
+                    "document_id": doc_id,
+                    "user_id": row.user_id,
+                    "distance": row.distance,
+                    "chunk_content": row.content,
+                    "chunk_metadata": row.metadata_,
+                }
+
+    logger.info(
+        f"Cross-user similarity search for doc {source_document_id}: "
+        f"{len(chunk_embeddings)} embeddings → {len(seen_documents)} candidate docs"
+    )
+    return list(seen_documents.values())
+
+
 async def hybrid_search(
     db: AsyncSession,
     user_id: uuid.UUID,

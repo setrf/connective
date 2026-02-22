@@ -4,3 +4,5 @@ from app.models.connector import Connector  # noqa: F401
 from app.models.document import Document  # noqa: F401
 from app.models.document_access import DocumentAccess  # noqa: F401
 from app.models.chunk import Chunk  # noqa: F401
+from app.models.chat_message import ChatMessage  # noqa: F401
+from app.models.overlap_alert import OverlapAlert  # noqa: F401

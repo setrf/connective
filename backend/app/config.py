@@ -83,6 +83,11 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:3000"
     backend_url: str = "http://localhost:8000"
 
+    # Overlap detection
+    overlap_similarity_threshold: float = 0.25
+    overlap_llm_confirm_threshold: float = 0.6
+    overlap_detection_enabled: bool = True
+
 
 postgres_settings = PostgresSettings()
 settings = Settings()

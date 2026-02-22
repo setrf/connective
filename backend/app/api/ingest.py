@@ -12,7 +12,7 @@ from app.database import get_session_ctx
 from app.models.connector import Connector
 from app.models.oauth_token import OAuthToken
 from app.models.user import User
-from app.pipeline.indexer import index_documents
+from app.pipeline.indexer import cleanup_stale_documents, index_documents
 from app.schemas.connector import IngestStatusResponse
 from app.services.encryption import decrypt_token, encrypt_token
 
@@ -94,13 +94,47 @@ async def _run_ingestion(user_id: str, provider: str):
             )
 
             # Index the documents
-            await index_documents(
+            new_docs = await index_documents(
                 db=db,
                 user_id=uid,
                 connector_id=conn.id,
                 provider=provider,
                 documents=documents,
             )
+
+            # Clean up stale documents not returned by this fetch
+            try:
+                fetched_external_ids = {doc["external_id"] for doc in documents}
+                await cleanup_stale_documents(
+                    db=db,
+                    user_id=uid,
+                    provider=provider,
+                    fetched_external_ids=fetched_external_ids,
+                    since=since,
+                )
+            except Exception:
+                logger.exception(
+                    f"Stale document cleanup failed for {provider}/{user_id}"
+                )
+                await db.rollback()
+
+            # Run overlap detection for newly indexed documents
+            if new_docs:
+                from app.pipeline.overlap_detector import detect_overlaps_for_document
+
+                for new_doc in new_docs:
+                    try:
+                        await detect_overlaps_for_document(
+                            db=db,
+                            document_id=new_doc["document_id"],
+                            user_id=uid,
+                            chunk_embeddings=new_doc["chunk_embeddings"],
+                        )
+                    except Exception:
+                        logger.exception(
+                            f"Overlap detection failed for doc {new_doc['document_id']}"
+                        )
+                await db.commit()
 
             conn.status = "ready"
             conn.last_synced_at = datetime.datetime.now(datetime.UTC)

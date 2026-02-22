@@ -2,6 +2,7 @@ import datetime
 import logging
 import uuid
 
+import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -34,15 +35,19 @@ async def index_documents(
     connector_id: uuid.UUID,
     provider: str,
     documents: list[dict],
-):
+) -> list[dict]:
     """Process and index a list of documents: preprocess, chunk, embed, store.
 
     Documents are globally deduplicated by (provider, external_id).
     If a document already exists (synced by another user), we skip
     re-embedding and just grant the current user access via document_access.
+
+    Returns a list of newly created documents with their embeddings:
+    [{document_id, chunk_embeddings}, ...]
     """
     new_count = 0
     dedup_count = 0
+    new_docs = []
 
     for doc_data in documents:
         source_created_at = None
@@ -134,9 +139,82 @@ async def index_documents(
             db.add(chunk)
 
         new_count += 1
+        new_docs.append({
+            "document_id": doc.id,
+            "chunk_embeddings": embeddings,
+        })
 
     await db.commit()
     logger.info(
         f"Indexed {provider}: {new_count} new, {dedup_count} deduplicated "
         f"(of {len(documents)} total)"
     )
+
+    return new_docs
+
+
+async def cleanup_stale_documents(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    provider: str,
+    fetched_external_ids: set[str],
+    since: datetime.datetime,
+) -> int:
+    """Remove user access for documents that should have appeared in the fetch
+    window but were not returned (deleted/trashed upstream).
+
+    A document is stale if:
+    - The user has access to it
+    - It belongs to the given provider
+    - Its source_created_at >= since (inside the fetch window)
+    - Its external_id was NOT in the current fetch results
+
+    Documents with NULL source_created_at or older than the window are left alone.
+    Orphaned documents (no remaining access) are deleted entirely.
+
+    Returns the number of access entries removed.
+    """
+    # Find stale documents: in the user's access, in the fetch window, but not fetched
+    stale_q = (
+        select(DocumentAccess.id, Document.id.label("doc_id"))
+        .join(Document, DocumentAccess.document_id == Document.id)
+        .where(
+            DocumentAccess.user_id == user_id,
+            Document.provider == provider,
+            Document.source_created_at >= since,
+            Document.external_id.notin_(fetched_external_ids),
+        )
+    )
+    result = await db.execute(stale_q)
+    stale_rows = result.all()
+
+    if not stale_rows:
+        return 0
+
+    access_ids = [row[0] for row in stale_rows]
+    stale_doc_ids = [row[1] for row in stale_rows]
+
+    # Delete user's access entries for stale documents
+    await db.execute(
+        sa.delete(DocumentAccess).where(DocumentAccess.id.in_(access_ids))
+    )
+
+    # Delete orphaned documents (no remaining access entries)
+    orphan_subq = (
+        select(Document.id)
+        .outerjoin(DocumentAccess, DocumentAccess.document_id == Document.id)
+        .where(
+            Document.id.in_(stale_doc_ids),
+            DocumentAccess.id.is_(None),
+        )
+    )
+    orphan_result = await db.execute(
+        sa.delete(Document).where(Document.id.in_(orphan_subq))
+    )
+    orphan_count = orphan_result.rowcount
+
+    logger.info(
+        f"Stale cleanup {provider}: removed {len(access_ids)} access entries, "
+        f"{orphan_count} orphaned documents"
+    )
+    return len(access_ids)

@@ -27,10 +27,34 @@ export interface Citation {
 
 export interface ChatMessage {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
   citations?: Citation[];
   confidence?: number;
+  metadata?: Record<string, unknown> | null;
+  created_at?: string;
+}
+
+export interface OverlapAlert {
+  id: string;
+  summary: string;
+  similarity_score: number;
+  is_read: boolean;
+  other_user_name: string | null;
+  other_user_email: string | null;
+  doc_a_title: string | null;
+  doc_a_provider: string | null;
+  doc_a_url: string | null;
+  doc_b_title: string | null;
+  doc_b_provider: string | null;
+  doc_b_url: string | null;
+  chat_message_id: string | null;
+  created_at: string;
+}
+
+export interface NotificationsResponse {
+  alerts: OverlapAlert[];
+  unread_count: number;
 }
 
 export interface GitHubRepo {

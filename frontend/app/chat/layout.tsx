@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { UserMenu } from "@/components/auth/user-menu";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export default function ChatLayout({
   children,
@@ -29,7 +30,10 @@ export default function ChatLayout({
               </Link>
             </nav>
           </div>
-          <UserMenu />
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <UserMenu />
+          </div>
         </div>
       </header>
       <main className="flex-1 overflow-hidden">{children}</main>

@@ -161,6 +161,52 @@ class ApiClient {
     if (!res.ok) throw new Error("Scan failed");
     return res.json();
   }
+
+  async getChatHistory(before?: string, limit: number = 50) {
+    const params = new URLSearchParams();
+    if (before) params.set("before", before);
+    params.set("limit", String(limit));
+    const res = await fetch(`${API_URL}/api/chat/history?${params}`, {
+      headers: this.headers(),
+    });
+    if (!res.ok) throw new Error("Failed to fetch chat history");
+    return res.json();
+  }
+
+  async getNotifications() {
+    const res = await fetch(`${API_URL}/api/notifications`, {
+      headers: this.headers(),
+    });
+    if (!res.ok) throw new Error("Failed to fetch notifications");
+    return res.json();
+  }
+
+  async getUnreadCount(): Promise<{ unread_count: number }> {
+    const res = await fetch(`${API_URL}/api/notifications/unread-count`, {
+      headers: this.headers(),
+    });
+    if (!res.ok) throw new Error("Failed to fetch unread count");
+    return res.json();
+  }
+
+  async markNotificationsRead(alertIds: string[]) {
+    const res = await fetch(`${API_URL}/api/notifications/mark-read`, {
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify({ alert_ids: alertIds }),
+    });
+    if (!res.ok) throw new Error("Failed to mark as read");
+    return res.json();
+  }
+
+  async markAllNotificationsRead() {
+    const res = await fetch(`${API_URL}/api/notifications/mark-all-read`, {
+      method: "POST",
+      headers: this.headers(),
+    });
+    if (!res.ok) throw new Error("Failed to mark all as read");
+    return res.json();
+  }
 }
 
 export const apiClient = new ApiClient();
