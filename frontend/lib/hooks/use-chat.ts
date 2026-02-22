@@ -1,0 +1,116 @@
+"use client";
+
+import { useCallback, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+import type { ChatMessage, Citation } from "@/lib/types";
+
+let messageIdCounter = 0;
+
+export function useChat() {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [activeCitations, setActiveCitations] = useState<Citation[]>([]);
+
+  const sendMessage = useCallback(
+    async (query: string) => {
+      const userMessage: ChatMessage = {
+        id: `msg-${++messageIdCounter}`,
+        role: "user",
+        content: query,
+      };
+
+      const assistantMessage: ChatMessage = {
+        id: `msg-${++messageIdCounter}`,
+        role: "assistant",
+        content: "",
+      };
+
+      setMessages((prev) => [...prev, userMessage, assistantMessage]);
+      setIsStreaming(true);
+
+      try {
+        const API_URL =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const res = await fetch(`${API_URL}/api/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${(apiClient as any).token}`,
+          },
+          body: JSON.stringify({ query }),
+        });
+
+        if (!res.ok) throw new Error("Chat failed");
+        if (!res.body) throw new Error("No body");
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let currentEvent = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (line.startsWith("event:")) {
+              currentEvent = line.slice(6).trim();
+            } else if (line.startsWith("data:")) {
+              const data = line.startsWith("data: ") ? line.slice(6) : line.slice(5);
+
+              if (currentEvent === "token") {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMessage.id
+                      ? { ...m, content: m.content + data }
+                      : m
+                  )
+                );
+              } else if (currentEvent === "result") {
+                try {
+                  const result = JSON.parse(data);
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantMessage.id
+                        ? {
+                            ...m,
+                            content: result.answer,
+                            citations: result.citations,
+                            confidence: result.confidence,
+                          }
+                        : m
+                    )
+                  );
+                  setActiveCitations(result.citations || []);
+                } catch {
+                  // Ignore parse errors
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessage.id
+              ? {
+                  ...m,
+                  content:
+                    "Sorry, something went wrong. Please try again.",
+                }
+              : m
+          )
+        );
+      } finally {
+        setIsStreaming(false);
+      }
+    },
+    []
+  );
+
+  return { messages, isStreaming, activeCitations, sendMessage, setActiveCitations };
+}

@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17-trixie
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: connective
+      POSTGRES_PASSWORD: connective
+      POSTGRES_DB: connective
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U connective"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
