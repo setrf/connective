@@ -18,10 +18,16 @@ SCOPES = "https://www.googleapis.com/auth/drive.readonly https://www.googleapis.
 
 
 class GoogleDriveConnector(BaseConnector):
+    @staticmethod
+    def _redirect_uri() -> str:
+        if settings.google_redirect_uri:
+            return settings.google_redirect_uri
+        return f"{settings.backend_url}/api/connectors/google_drive/callback"
+
     def get_oauth_url(self, user_id: str) -> str:
         params = {
             "client_id": settings.google_client_id,
-            "redirect_uri": f"{settings.backend_url}/api/connectors/google_drive/callback",
+            "redirect_uri": self._redirect_uri(),
             "response_type": "code",
             "scope": SCOPES,
             "access_type": "offline",
@@ -39,7 +45,7 @@ class GoogleDriveConnector(BaseConnector):
                     "client_secret": settings.google_client_secret,
                     "code": code,
                     "grant_type": "authorization_code",
-                    "redirect_uri": f"{settings.backend_url}/api/connectors/google_drive/callback",
+                    "redirect_uri": self._redirect_uri(),
                 },
             )
             data = resp.json()

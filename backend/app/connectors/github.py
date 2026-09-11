@@ -22,7 +22,6 @@ class GitHubConnector(BaseConnector):
         params = {
             "client_id": settings.github_client_id,
             "scope": SCOPES,
-            "redirect_uri": f"{settings.backend_url}/api/connectors/github/callback",
             "state": user_id,
         }
         return f"{GITHUB_AUTH_URL}?{urlencode(params)}"

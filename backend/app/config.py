@@ -78,6 +78,8 @@ class Settings(BaseSettings):
     # OAuth - Google
     google_client_id: str = ""
     google_client_secret: str = ""
+    # Optional explicit redirect URI override for Google connector OAuth
+    google_redirect_uri: str = ""
 
     # Frontend URL (for OAuth redirects)
     frontend_url: str = "http://localhost:3000"

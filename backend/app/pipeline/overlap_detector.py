@@ -2,6 +2,7 @@ import json
 import logging
 import uuid
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -213,42 +214,60 @@ async def detect_overlaps_for_document(
             summary=llm_result["summary"],
         )
 
-        # Create chat message
-        chat_msg = ChatMessage(
-            user_id=notify_user_id,
-            role="system",
-            content=message_content,
-            metadata_={
-                "type": "overlap_alert",
-                "doc_a_id": str(canon_a),
-                "doc_b_id": str(canon_b),
-                "other_user_id": str(other_user_id),
-                "other_user_name": other_user.name,
-                "similarity_score": llm_result["confidence"],
-            },
-        )
-        db.add(chat_msg)
-        await db.flush()
+        # Savepoint guards against race conditions where another worker inserts
+        # the same canonical pair between our pre-check and insert.
+        try:
+            async with db.begin_nested():
+                chat_msg = ChatMessage(
+                    user_id=notify_user_id,
+                    role="system",
+                    content=message_content,
+                    metadata_={
+                        "type": "overlap_alert",
+                        "doc_a_id": str(canon_a),
+                        "doc_b_id": str(canon_b),
+                        "other_user_id": str(other_user_id),
+                        "other_user_name": other_user.name,
+                        "similarity_score": llm_result["confidence"],
+                    },
+                )
+                db.add(chat_msg)
+                await db.flush()
 
-        # Create overlap alert
-        alert = OverlapAlert(
-            user_id=notify_user_id,
-            doc_a_id=canon_a,
-            doc_b_id=canon_b,
-            similarity_score=llm_result["confidence"],
-            summary=llm_result["summary"],
-            other_user_id=other_user_id,
-            chat_message_id=chat_msg.id,
-            metadata_={
-                "doc_a_title": source_doc.title if canon_a == document_id else target_doc.title,
-                "doc_a_provider": source_doc.provider if canon_a == document_id else target_doc.provider,
-                "doc_a_url": source_doc.url if canon_a == document_id else target_doc.url,
-                "doc_b_title": target_doc.title if canon_a == document_id else source_doc.title,
-                "doc_b_provider": target_doc.provider if canon_a == document_id else source_doc.provider,
-                "doc_b_url": target_doc.url if canon_a == document_id else source_doc.url,
-            },
-        )
-        db.add(alert)
+                alert = OverlapAlert(
+                    user_id=notify_user_id,
+                    doc_a_id=canon_a,
+                    doc_b_id=canon_b,
+                    similarity_score=llm_result["confidence"],
+                    summary=llm_result["summary"],
+                    other_user_id=other_user_id,
+                    chat_message_id=chat_msg.id,
+                    metadata_={
+                        "doc_a_title": (
+                            source_doc.title if canon_a == document_id else target_doc.title
+                        ),
+                        "doc_a_provider": (
+                            source_doc.provider if canon_a == document_id else target_doc.provider
+                        ),
+                        "doc_a_url": source_doc.url if canon_a == document_id else target_doc.url,
+                        "doc_b_title": (
+                            target_doc.title if canon_a == document_id else source_doc.title
+                        ),
+                        "doc_b_provider": (
+                            target_doc.provider if canon_a == document_id else source_doc.provider
+                        ),
+                        "doc_b_url": target_doc.url if canon_a == document_id else source_doc.url,
+                    },
+                )
+                db.add(alert)
+                await db.flush()
+        except IntegrityError as exc:
+            if "uq_overlap_alerts_doc_pair" in str(exc):
+                logger.info(
+                    f"Overlap alert already exists (race): {canon_a} <-> {canon_b}, skipping"
+                )
+                continue
+            raise
 
         logger.info(
             f"Overlap alert created: {canon_a} <-> {canon_b} "

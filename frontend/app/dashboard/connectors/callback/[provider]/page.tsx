@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
-export default function CallbackPage({
-  params,
-}: {
-  params: { provider: string };
-}) {
+export default function CallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams<{ provider: string }>();
 
   useEffect(() => {
     // The OAuth callback is handled by the backend.

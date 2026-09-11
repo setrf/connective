@@ -19,11 +19,15 @@ USER_SCOPES = "channels:history,channels:read,groups:history,groups:read,users:r
 
 
 class SlackConnector(BaseConnector):
+    @staticmethod
+    def _redirect_uri() -> str:
+        return f"{settings.backend_url}/api/connectors/slack/callback"
+
     def get_oauth_url(self, user_id: str) -> str:
         params = {
             "client_id": settings.slack_client_id,
             "user_scope": USER_SCOPES,
-            "redirect_uri": f"{settings.backend_url}/api/connectors/slack/callback",
+            "redirect_uri": self._redirect_uri(),
             "state": user_id,
         }
         return f"{SLACK_AUTH_URL}?{urlencode(params)}"
@@ -36,6 +40,7 @@ class SlackConnector(BaseConnector):
                     "client_id": settings.slack_client_id,
                     "client_secret": settings.slack_client_secret,
                     "code": code,
+                    "redirect_uri": self._redirect_uri(),
                 },
             )
             data = resp.json()
